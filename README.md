@@ -11,6 +11,8 @@ A [markdown-it](https://github.com/markdown-it/markdown-it) plugin to support Ma
 ```
 {aside}Something said to the side.{/aside}
 
+{blurb}Something else you should know.{/blurb}
+
 {blurb, class: warning}
 Don't do this!
 {/blurb}
