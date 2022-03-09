@@ -1,6 +1,6 @@
 {
   "name": "@humanwhocodes/markdown-it-markua-aside",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "description": "Markua-style asides and blurbs for markdown-it",
   "type": "module",
   "main": "dist/markua-aside.cjs",
