@@ -1,0 +1,68 @@
+{
+  "name": "@humanwhocodes/markdown-it-markua-aside",
+  "version": "0.0.0",
+  "description": "Markua-style asides and blurbs for markdown-it",
+  "type": "module",
+  "main": "dist/markua-aside.cjs",
+  "module": "dist/markua-aside.js",
+  "types": "dist/markua-aside.d.ts",
+  "exports": {
+    "require": "./dist/markua-aside.cjs",
+    "import": "./dist/markua-aside.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix"
+    ]
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/nzakas"
+  },
+  "scripts": {
+    "build": "rollup -c && tsc",
+    "prepare": "npm run build",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint --fix src/ tests/",
+    "pretest": "npm run build",
+    "test": "mocha tests/markua-aside.test.js --timeout 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/humanwhocodes/puppeteer-markua-aside.git"
+  },
+  "keywords": [
+    "markdown-it-plugin",
+    "markdown-it",
+    "markdown",
+    "markua",
+    "aside",
+    "blurb"
+  ],
+  "author": "Nicholas C. Zaks",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/markdown-it": "^12.2.3",
+    "chai": "^4.3.4",
+    "eslint": "^8.10.0",
+    "lint-staged": "^10.4.0",
+    "markdown-it": "^12.3.2",
+    "markdown-it-testgen": "^0.1.6",
+    "mocha": "^9.0.3",
+    "rollup": "^1.20.3",
+    "typescript": "^4.0.3",
+    "yorkie": "^2.0.0"
+  },
+  "dependencies": {
+    "@humanwhocodes/array-with-default": "^1.1.0"
+  }
+}

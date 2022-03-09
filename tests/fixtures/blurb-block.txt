@@ -1,0 +1,81 @@
+
+.
+{blurb}
+Hello world!
+{/blurb}
+.
+<aside class="blurb">
+<p>Hello world!</p>
+</aside>
+.
+
+
+.
+{blurb}Hello world!{/blurb}
+.
+<aside class="blurb">
+<p>Hello world!</p>
+</aside>
+.
+
+
+.
+{blurb, class: warning}Hello world!{/blurb}
+.
+<aside class="blurb warning">
+<p>Hello world!</p>
+</aside>
+.
+
+
+.
+{blurb, class: center}Hello world!{/blurb}
+.
+<aside class="blurb center">
+<p>Hello world!</p>
+</aside>
+.
+
+
+.
+{blurb, class: discussion}Hello world!{/blurb}
+.
+<aside class="blurb discussion">
+<p>Hello world!</p>
+</aside>
+.
+
+.
+{blurb, class: error}Hello world!{/blurb}
+.
+<aside class="blurb error">
+<p>Hello world!</p>
+</aside>
+.
+
+
+.
+{blurb, class: information}Hello world!{/blurb}
+.
+<aside class="blurb information">
+<p>Hello world!</p>
+</aside>
+.
+
+.
+{blurb, class: tip}Hello world!{/blurb}
+.
+<aside class="blurb tip">
+<p>Hello world!</p>
+</aside>
+.
+
+.
+{blurb, class: tip}
+Hello world!
+{/blurb}
+.
+<aside class="blurb tip">
+<p>Hello world!</p>
+</aside>
+.

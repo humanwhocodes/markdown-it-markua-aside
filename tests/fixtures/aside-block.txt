@@ -1,0 +1,20 @@
+Aside tags on separate lines
+.
+{aside}
+Hello world!
+{/aside}
+.
+<aside>
+<p>Hello world!</p>
+</aside>
+.
+
+
+Aside tags on a single line
+.
+{aside}Hello world!{/aside}
+.
+<aside>
+<p>Hello world!</p>
+</aside>
+.
