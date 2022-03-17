@@ -55,6 +55,124 @@ function renderBlurb(tokens, idx, _options, env, slf) {
     return slf.renderToken(tokens, idx, _options, env, slf);
 }
 
+
+function getLine(state, lineNumber) {
+
+    const start = state.bMarks[lineNumber] + state.tShift[lineNumber];
+    const end = state.eMarks[lineNumber];
+    const text = state.src.slice(start, end);
+
+    return {
+        start,
+        end,
+        text
+    };
+
+}
+
+function findStartTag(state, lineNumber) {
+
+    const {
+        text,
+        start: lineStart,
+        end: lineEnd
+    } = getLine(state, lineNumber);
+    const src = state.src;
+
+    // tags must start at start of line
+    if (text[0] !== "{") {
+        return undefined;
+    }
+
+    // parse the tag name
+    let tagName = "";
+
+    for (let i = 1; /[a-z]/i.test(text[i]) && i < text.length; i++) {
+        tagName += text[i];
+    }
+
+    // exit early for unknown tags
+    if (!TAGS.has(tagName)) {
+        return undefined;
+    }
+
+    let expectedClosingCurlyPos = 6;
+    let className = "";
+
+    // blurbs allow class names
+    if (tagName === "blurb") {
+
+        // 6 = curly brace plus tag name
+        let pos = state.skipSpaces(lineStart + 6);
+
+        if (src[pos] === ",") {
+
+            pos = state.skipSpaces(pos + 1);
+
+            if (src.slice(pos, pos + 6) !== "class:") {
+                return undefined;
+            }
+
+            pos = state.skipSpaces(pos + 6);
+
+            // find closing curly
+            let i = pos;
+            for (; src.charAt(i) !== "}" && i < lineEnd; i++) {
+                className += src.charAt(i);
+            }
+
+            if (!BLURB_CLASSES.has(className)) {
+                console.warn("Unknown blurb class detected:", className);
+            }
+
+            expectedClosingCurlyPos = i - lineStart;
+        }
+    }
+
+    if (text[expectedClosingCurlyPos] !== "}") {
+        return undefined;
+    }
+
+    const start = lineStart;
+    const end = start + expectedClosingCurlyPos + 1;
+
+    return {
+        tagName,
+        className,
+        start,
+        end,
+        lineNumber,
+        alone: start === lineStart && end === lineEnd
+    };
+}
+
+function findEndTag(state, lineNumber, tagName) {
+
+    const {
+        text,
+        start: lineStart,
+        end: lineEnd
+    } = getLine(state, lineNumber);
+    const closingTagText = `{/${tagName}}`;
+
+    let openCurlyPos = text.indexOf(closingTagText);
+    if (openCurlyPos === -1) {
+        return undefined;
+    }
+
+    const start = lineStart + openCurlyPos;
+    const end = start + closingTagText.length;
+
+    return {
+        tagName,
+        start,
+        end,
+        lineNumber,
+        alone: start === lineStart && end === lineEnd
+    };
+}
+
+
 //-----------------------------------------------------------------------------
 // Exports
 //-----------------------------------------------------------------------------
@@ -68,115 +186,30 @@ function renderBlurb(tokens, idx, _options, env, slf) {
  */
 export function asidePlugin(md) {
 
-
     function aside(state, startLine, endLine, silent) {
-        var nextLine, token,
-            originalParent, originalLineMax,
-            start = state.bMarks[startLine] + state.tShift[startLine],
-            max = state.eMarks[startLine];
+        let nextLine, token,
+            originalParent, originalLineMax;
 
-        let src = state.src;
-        let isClosingTag = false;
-        let tagStart = start;
+        let isSingleLine = false;
 
-        if (src.charAt(start) !== "{") {
+        // try to find start tag on this line
+        const startTag = findStartTag(state, startLine);
+        if (!startTag) {
             return false;
         }
 
-        tagStart++;
+        // try to find end tag on this line
+        let endTag = findEndTag(state, startLine, startTag.tagName);
+        if (endTag) {
+            isSingleLine = true;
 
-        if (src.charAt(tagStart) === "/") {
-            isClosingTag = true;
-            tagStart++;
-        }
-
-        let lastCharPos = tagStart + 5;
-        let tagName = src.slice(tagStart, lastCharPos);
-
-        // exit early for unknown tags
-        if (!TAGS.has(tagName)) {
-            return false;
-        }
-
-        let className = "";
-
-        // check for, e.g. {blurb, class: warning}
-        if (src.charAt(lastCharPos) === ",") {
-            let pos = tagStart + 6;
-            pos = state.skipSpaces(pos);
-
-            if (src.slice(pos, pos + 6) !== "class:") {
-                return false;
+            // validation complete
+            if (silent) {
+                return true;
             }
-
-            pos = state.skipSpaces(pos + 6);
-
-            // find closing curly
-            let i = pos;
-            for (; src.charAt(i) !== "}" && i < max; i++) {
-                className += src.charAt(i);
-            }
-
-            if (!BLURB_CLASSES.has(className)) {
-                console.warn("Unknown blurb class detected:", className);
-            }
-
-            lastCharPos = i;
         }
 
-        const hasClosingCurly = src.charAt(lastCharPos) === "}";
-
-        // not an aside or blurb
-        if (!hasClosingCurly) {
-            return false;
-        }
-
-        // Since start is found, we can report success here in validation mode
-        //
-        if (silent) {
-            return true;
-        }
-
-        // closing tags are always ignored and we just go to the next line
-        if (isClosingTag) {
-            state.line = startLine + 1;
-            return true;
-        }
-
-        // Only dealing with opening tags here
-
-        // TODO: Improper blocks
-        /*
-         * {aside}foo
-         *
-         * instead of
-         * 
-         * {aside}
-         * foo
-         */
-        // let textAfterOpen = false;
-
-        /*
-         * Search from the position after the last curly until the end of the line
-         * looking for additional characters.
-         */
-        // for (let i = lastCharPos + 1; i < max; i++) {
-
-        //     // if there's anything other than whitespace, flag it
-        //     if (!/\s/.test(src[i])) {
-        //         textAfterOpen = true;
-        //         break;
-        //     }
-        // }
-
-        /*
-         * Try to detect asides/blurbs on one line, such as:
-         * {blurb}Foo{/blurb}.
-         */
-        const closingTagPos = src.slice(lastCharPos + 1, max).indexOf(`{/${tagName}}`);
-        const singleLine = closingTagPos > -1;
-
-        if (singleLine) {
+        if (isSingleLine) {
             nextLine = startLine + 1;
         } else {
             // Search for the end of the block
@@ -192,11 +225,8 @@ export function asidePlugin(md) {
                     break;
                 }
 
-                start = state.bMarks[nextLine] + state.tShift[nextLine];
-                max = state.eMarks[nextLine];
-
-                // possible blurb end
-                if (state.src.slice(start, max).includes(`{/${tagName}}`)) {
+                endTag = findEndTag(state, nextLine, startTag.tagName);
+                if (endTag) {
                     break;
                 }
 
@@ -204,6 +234,7 @@ export function asidePlugin(md) {
 
         }
 
+        let tagName = startTag.tagName;
         originalParent = state.parentType;
         originalLineMax = state.lineMax;
         state.parentType = tagName;
@@ -213,21 +244,23 @@ export function asidePlugin(md) {
         token = state.push(tagName + "_open", tagName, 1);
         token.markup = `{${tagName}}`;
         token.block = true;
-        token.info = tagName === "blurb" ? { className } : null;
+        token.info = tagName === "blurb" ? { className: startTag.className } : null;
         token.map = [startLine, startLine + 1];
 
         let originalBMark = state.bMarks[startLine];
         let originalEMark = state.eMarks[startLine];
         let lineToTokenize = startLine + 1;
 
-        // for single line we need to adjust the state
-        if (singleLine) {
-            state.bMarks[startLine] = lastCharPos + 1;
-            state.eMarks[startLine] = lastCharPos + 1 + closingTagPos;
+        if (!startTag.alone) {
+            state.bMarks[startTag.lineNumber] = startTag.end;
             lineToTokenize = startLine;
         }
 
-        state.md.block.tokenize(state, lineToTokenize, nextLine);
+        if (!endTag.alone) {
+            state.eMarks[endTag.lineNumber] = endTag.start;
+        }
+
+        state.md.block.tokenize(state, lineToTokenize, lineToTokenize + 1);
 
         state.bMarks[startLine] = originalBMark;
         state.eMarks[startLine] = originalEMark;
@@ -239,7 +272,7 @@ export function asidePlugin(md) {
 
         state.parentType = originalParent;
         state.lineMax = originalLineMax;
-        state.line = nextLine;
+        state.line = nextLine + 1;
 
         return true;
     }

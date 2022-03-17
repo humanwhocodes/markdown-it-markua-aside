@@ -79,3 +79,21 @@ Hello world!
 <p>Hello world!</p>
 </aside>
 .
+
+.
+{blurb}Hello world!
+{/blurb}
+.
+<aside class="blurb">
+<p>Hello world!</p>
+</aside>
+.
+
+.
+{blurb}
+Hello world!{/blurb}
+.
+<aside class="blurb">
+<p>Hello world!</p>
+</aside>
+.

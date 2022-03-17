@@ -37,6 +37,8 @@ md.use(asidePlugin, "aside");
 describe("Markua Aside Plugin", () => {
 
     for (const filename of filenames) {
-        generate(filename, md);
+        describe(path.basename(filename), () => {
+            generate(filename, md);
+        });
     }
 });
