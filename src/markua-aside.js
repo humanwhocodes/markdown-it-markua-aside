@@ -249,18 +249,21 @@ export function asidePlugin(md) {
 
         let originalBMark = state.bMarks[startLine];
         let originalEMark = state.eMarks[startLine];
-        let lineToTokenize = startLine + 1;
+        let fromLine = startTag.lineNumber;
+        let toLine = endTag.lineNumber;
 
-        if (!startTag.alone) {
+        if (startTag.alone) {
+            fromLine++;
+        } else {
             state.bMarks[startTag.lineNumber] = startTag.end;
-            lineToTokenize = startLine;
         }
 
         if (!endTag.alone) {
+            toLine++;
             state.eMarks[endTag.lineNumber] = endTag.start;
         }
 
-        state.md.block.tokenize(state, lineToTokenize, lineToTokenize + 1);
+        state.md.block.tokenize(state, fromLine, toLine);
 
         state.bMarks[startLine] = originalBMark;
         state.eMarks[startLine] = originalEMark;
@@ -272,7 +275,7 @@ export function asidePlugin(md) {
 
         state.parentType = originalParent;
         state.lineMax = originalLineMax;
-        state.line = nextLine + 1;
+        state.line = endTag.lineNumber + 1;
 
         return true;
     }
