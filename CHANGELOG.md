@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.3](https://www.github.com/humanwhocodes/markdown-it-markua-aside/compare/v0.1.2...v0.1.3) (2022-03-25)
+
+
+### Bug Fixes
+
+* Multiline asides ([c48bc84](https://www.github.com/humanwhocodes/markdown-it-markua-aside/commit/c48bc84735bf836a816fd23d009691badfe5aefb))
+
 ### [0.1.2](https://www.github.com/humanwhocodes/markdown-it-markua-aside/compare/v0.1.1...v0.1.2) (2022-03-17)
 
 
