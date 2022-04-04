@@ -16,9 +16,12 @@ A [markdown-it](https://github.com/markdown-it/markdown-it) plugin to support Ma
 {blurb, class: warning}
 Don't do this!
 {/blurb}
+
+A> Something said to the site.
+
+B> Something else you should know.
 ```
 
-**Coming Soon:** support for blockquote-style asides and blurbs, such as `A>` and `B>`.
 
 ## Prerequisites
 

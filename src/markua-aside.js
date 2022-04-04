@@ -13,20 +13,27 @@
 //-----------------------------------------------------------------------------
 
 const TAGS = new Set(["aside", "blurb"]);
-const BLURB_CLASSES = new Set([
-    "center",
-    "discussion",
-    "error",
-    "information",
-    "tip",
-    "warning"
+
+const BLOCKS = new Map([
+    ["A>", "aside"],
+    ["B>", "blurb"],
+    ["C>", "blurb:center"],
+    ["D>", "blurb:discussion"],
+    ["E>", "blurb:error"],
+    ["I>", "blurb:information"],
+    ["Q>", "blurb:question"],
+    ["T>", "blurb:tip"],
+    ["W>", "blurb:warning"],
+    ["X>", "blurb:exercise"]
 ]);
 
 //-----------------------------------------------------------------------------
 // Helpers
 //-----------------------------------------------------------------------------
 
-
+function isSpace(c) {
+    return c === " " || c === "\t";
+}
 
 function renderAside(tokens, idx, _options, env, slf) {
 
@@ -68,6 +75,35 @@ function getLine(state, lineNumber) {
         text
     };
 
+}
+
+function findBlockHeader(state, lineNumber) {
+
+    const {
+        text,
+        start: lineStart
+    } = getLine(state, lineNumber);
+
+    const marker = text.slice(0, 2);
+    const blockType = BLOCKS.get(marker);
+    
+    if (!blockType) {
+        return undefined;
+    }
+
+    const [ tagName, className ] = blockType.split(":");
+    const c = text[2];
+    const hasTrailingSpace = isSpace(c);
+
+    return {
+        tagName,
+        className,
+        marker,
+        start: lineStart,
+        end: lineStart + 2 + (hasTrailingSpace ? 1 : 0),
+        lineNumber,
+        spaceAfter: hasTrailingSpace
+    };
 }
 
 function findStartTag(state, lineNumber) {
@@ -121,9 +157,9 @@ function findStartTag(state, lineNumber) {
                 className += src.charAt(i);
             }
 
-            if (!BLURB_CLASSES.has(className)) {
-                console.warn("Unknown blurb class detected:", className);
-            }
+            // if (!BLURB_CLASSES.has(className)) {
+            //     console.warn("Unknown blurb class detected:", className);
+            // }
 
             expectedClosingCurlyPos = i - lineStart;
         }
@@ -172,6 +208,169 @@ function findEndTag(state, lineNumber, tagName) {
     };
 }
 
+/**
+ * The aside plugin for blocks such as A> and B>
+ * @param {MarkdownIt} md The MarkdownIt instance to
+ *      attach to.
+ * @returns {boolean} True if the function handled an aside or blurb,
+ *      false if not. 
+ */
+
+function asideBlockHeaderPlugin(state, header, endLine, silent) {
+
+    const oldLineMax = state.lineMax;
+    let startLine = header.lineNumber;
+    // let pos = state.bMarks[startLine] + state.tShift[startLine];
+    let pos = header.end;
+
+    if (silent) {
+        return true;
+    }
+
+    // adjust the start of the line to be after the A>
+    let oldBMarks = [state.bMarks[startLine]];
+    state.bMarks[startLine] = pos;
+
+    // save new parent type
+    const oldParentType = state.parentType;
+    state.parentType = header.tagName;
+
+    // search for the end of the block
+    let nextLine;
+    for (nextLine = startLine + 1; nextLine < endLine; nextLine++) {
+
+        const nextHeader = findBlockHeader(state, nextLine);
+
+        // no aside/blurb or different aside/blurb
+        if (!nextHeader || nextHeader.tagName !== header.tagName || nextHeader.className !== header.className) {
+            break;
+        }
+
+        // otherwise update line markers
+        oldBMarks.push(state.bMarks[nextLine]);
+        state.bMarks[nextLine] = nextHeader.end;
+    }
+
+    // save old indent
+    const oldIndent = state.blkIndent;
+    state.blkIndent = 0;
+
+    const tagName = header.tagName;
+    let token = state.push(`${tagName}_open`, tagName, 1);
+    token.markup = header.marker;
+    // token.map = lines = [startLine, 0];
+    token.info = tagName === "blurb" ? { className: header.className } : null;
+
+    state.md.block.tokenize(state, startLine, nextLine);
+
+    token = state.push(`${tagName}_close`, tagName, -1);
+    token.markup = header.marker;
+
+    state.lineMax = oldLineMax;
+    state.parentType = oldParentType;
+    state.blkIndent = oldIndent;
+
+    return true;
+}
+
+/**
+ * The aside plugin for tags such as {aside} and {blurb}
+ * @param {MarkdownIt} md The MarkdownIt instance to
+ *      attach to.
+ * @returns {boolean} True if the function handled an aside or blurb,
+ *      false if not. 
+ */
+
+function asideTagPlugin(state, startTag, endLine, silent) {
+
+    const startLine = startTag.lineNumber;
+    let nextLine = startLine + 1;
+    let isSingleLine = false;
+
+    // try to find end tag on this line
+    let endTag = findEndTag(state, startLine, startTag.tagName);
+    if (endTag) {
+        isSingleLine = true;
+
+        // validation complete
+        if (silent) {
+            return true;
+        }
+    }
+
+    if (isSingleLine) {
+        nextLine = startLine + 1;
+    } else {
+        // Search for the end of the block
+        //
+        nextLine = startLine;
+
+        // this loop searches for the ending tag
+        for (; ;) {
+            nextLine++;
+            if (nextLine >= endLine) {
+                // unclosed block should be autoclosed by end of document.
+                // also block seems to be autoclosed by end of parent
+                break;
+            }
+
+            endTag = findEndTag(state, nextLine, startTag.tagName);
+            if (endTag) {
+                break;
+            }
+
+        }
+
+    }
+
+    let tagName = startTag.tagName;
+    const originalParent = state.parentType;
+    const originalLineMax = state.lineMax;
+
+    state.parentType = tagName;
+    // this will prevent lazy continuations from ever going past our end marker
+    state.lineMax = nextLine;
+
+    let token = state.push(tagName + "_open", tagName, 1);
+    token.markup = `{${tagName}}`;
+    token.block = true;
+    token.info = tagName === "blurb" ? { className: startTag.className } : null;
+    token.map = [startLine, startLine + 1];
+
+    let originalBMark = state.bMarks[startLine];
+    let originalEMark = state.eMarks[startLine];
+    let fromLine = startTag.lineNumber;
+    let toLine = endTag.lineNumber;
+
+    if (startTag.alone) {
+        fromLine++;
+    } else {
+        state.bMarks[startTag.lineNumber] = startTag.end;
+    }
+
+    if (!endTag.alone) {
+        toLine++;
+        state.eMarks[endTag.lineNumber] = endTag.start;
+    }
+
+    state.md.block.tokenize(state, fromLine, toLine);
+
+    state.bMarks[startLine] = originalBMark;
+    state.eMarks[startLine] = originalEMark;
+
+    token = state.push(tagName + "_close", tagName, -1);
+    token.markup = `{/${tagName}}`;
+    token.block = true;
+    // token.map = [nextLine, nextLine+1];
+
+    state.parentType = originalParent;
+    state.lineMax = originalLineMax;
+    state.line = endTag.lineNumber + 1;
+
+    return true;
+
+}
+
 
 //-----------------------------------------------------------------------------
 // Exports
@@ -187,97 +386,23 @@ function findEndTag(state, lineNumber, tagName) {
 export function asidePlugin(md) {
 
     function aside(state, startLine, endLine, silent) {
-        let nextLine, token,
-            originalParent, originalLineMax;
 
-        let isSingleLine = false;
-
-        // try to find start tag on this line
-        const startTag = findStartTag(state, startLine);
-        if (!startTag) {
+        // if it's indented more than 3 spaces, it should be a code block
+        if (state.sCount[startLine] - state.blkIndent >= 4) {
             return false;
         }
 
-        // try to find end tag on this line
-        let endTag = findEndTag(state, startLine, startTag.tagName);
-        if (endTag) {
-            isSingleLine = true;
-
-            // validation complete
-            if (silent) {
-                return true;
-            }
+        const block = findBlockHeader(state, startLine);
+        if (block) {
+            return asideBlockHeaderPlugin(state, block, endLine, silent);
         }
 
-        if (isSingleLine) {
-            nextLine = startLine + 1;
-        } else {
-            // Search for the end of the block
-            //
-            nextLine = startLine;
-
-            // this loop searches for the ending tag
-            for (; ;) {
-                nextLine++;
-                if (nextLine >= endLine) {
-                    // unclosed block should be autoclosed by end of document.
-                    // also block seems to be autoclosed by end of parent
-                    break;
-                }
-
-                endTag = findEndTag(state, nextLine, startTag.tagName);
-                if (endTag) {
-                    break;
-                }
-
-            }
-
+        const startTag = findStartTag(state, startLine);
+        if (startTag) {
+            return asideTagPlugin(state, startTag, endLine, silent);
         }
 
-        let tagName = startTag.tagName;
-        originalParent = state.parentType;
-        originalLineMax = state.lineMax;
-        state.parentType = tagName;
-        // this will prevent lazy continuations from ever going past our end marker
-        state.lineMax = nextLine;
-
-        token = state.push(tagName + "_open", tagName, 1);
-        token.markup = `{${tagName}}`;
-        token.block = true;
-        token.info = tagName === "blurb" ? { className: startTag.className } : null;
-        token.map = [startLine, startLine + 1];
-
-        let originalBMark = state.bMarks[startLine];
-        let originalEMark = state.eMarks[startLine];
-        let fromLine = startTag.lineNumber;
-        let toLine = endTag.lineNumber;
-
-        if (startTag.alone) {
-            fromLine++;
-        } else {
-            state.bMarks[startTag.lineNumber] = startTag.end;
-        }
-
-        if (!endTag.alone) {
-            toLine++;
-            state.eMarks[endTag.lineNumber] = endTag.start;
-        }
-
-        state.md.block.tokenize(state, fromLine, toLine);
-
-        state.bMarks[startLine] = originalBMark;
-        state.eMarks[startLine] = originalEMark;
-
-        token = state.push(tagName + "_close", tagName, -1);
-        token.markup = `{/${tagName}}`;
-        token.block = true;
-        // token.map = [nextLine, nextLine+1];
-
-        state.parentType = originalParent;
-        state.lineMax = originalLineMax;
-        state.line = endTag.lineNumber + 1;
-
-        return true;
+        return false;
     }
 
     md.block.ruler.before("paragraph", "aside", aside, {
