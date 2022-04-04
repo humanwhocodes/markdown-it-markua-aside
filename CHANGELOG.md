@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://www.github.com/humanwhocodes/markdown-it-markua-aside/compare/v0.1.3...v0.2.0) (2022-04-04)
+
+
+### Features
+
+* Implement A> and B> style blocks ([#5](https://www.github.com/humanwhocodes/markdown-it-markua-aside/issues/5)) ([282d29f](https://www.github.com/humanwhocodes/markdown-it-markua-aside/commit/282d29f5c589a020a422c8f0f335fd2812192496))
+
 ### [0.1.3](https://www.github.com/humanwhocodes/markdown-it-markua-aside/compare/v0.1.2...v0.1.3) (2022-03-25)
 
 
