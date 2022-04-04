@@ -1,0 +1,45 @@
+
+.
+B> Hello world!
+B>
+B> Hello world!
+.
+<aside class="blurb">
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+E> Hello world!
+E>
+E> Hello world!
+.
+<aside class="blurb error">
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+D> Hello world!
+D>
+D> Hello world!
+.
+<aside class="blurb discussion">
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+E> Hello world!
+D> Hello world!
+.
+<aside class="blurb error">
+<p>Hello world!</p>
+</aside>
+<aside class="blurb discussion">
+<p>Hello world!</p>
+</aside>
+.

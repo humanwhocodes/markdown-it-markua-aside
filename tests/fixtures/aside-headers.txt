@@ -1,0 +1,96 @@
+
+.
+A> Hello world!
+.
+<aside>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+A>Hello world!
+.
+<aside>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+A> Hello world!
+A>
+A> Hello world!
+.
+<aside>
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+A> * Hello world!
+A> * Hello world!
+.
+<aside>
+<ul>
+<li>Hello world!</li>
+<li>Hello world!</li>
+</ul>
+</aside>
+.
+
+.
+Hello world!
+A> * Item one
+A> * Item two
+
+Goodbye!
+.
+<p>Hello world!</p>
+<aside>
+<ul>
+<li>Item one</li>
+<li>Item two</li>
+</ul>
+</aside>
+<p>Goodbye!</p>
+.
+
+.
+A> Hello world!
+A> * Item one
+A> * Item two
+A>
+A>Goodbye!
+.
+<aside>
+<p>Hello world!</p>
+<ul>
+<li>Item one</li>
+<li>Item two</li>
+</ul>
+<p>Goodbye!</p>
+</aside>
+.
+
+
+.
+B> Hello world!
+B>
+B> Hello world!
+.
+<aside class="blurb">
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
+
+.
+E> Hello world!
+E>
+E> Hello world!
+.
+<aside class="blurb error">
+<p>Hello world!</p>
+<p>Hello world!</p>
+</aside>
+.
